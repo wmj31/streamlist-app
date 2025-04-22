@@ -1,12 +1,7 @@
 import React from 'react';
 
 function Movies() {
-  return (
-    <div className="page">
-      <h2>Movies Page</h2>
-      <p>This will be built in Week 4.</p>
-    </div>
-  );
+  return <div>Movies Page</div>;
 }
 
 export default Movies;

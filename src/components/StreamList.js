@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import '../App.css';
 
 function StreamList() {
   const [input, setInput] = useState('');
@@ -13,56 +14,50 @@ function StreamList() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (input.trim() === '') return;
-
-    setStreamList([...streamList, { title: input.trim(), watched: false }]);
+    if (!input.trim()) return;
+    const newItem = { title: input, watched: false };
+    setStreamList([...streamList, newItem]);
     setInput('');
+    console.log("User entered:", input);
   };
 
-  const handleDelete = (indexToRemove) => {
-    setStreamList(streamList.filter((_, index) => index !== indexToRemove));
+  const handleDelete = (index) => {
+    const updatedList = streamList.filter((_, i) => i !== index);
+    setStreamList(updatedList);
   };
 
-  const toggleWatched = (indexToToggle) => {
-    setStreamList(
-      streamList.map((item, index) =>
-        index === indexToToggle ? { ...item, watched: !item.watched } : item
-      )
-    );
+  const toggleWatched = (index) => {
+    const updatedList = [...streamList];
+    updatedList[index].watched = !updatedList[index].watched;
+    setStreamList(updatedList);
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>🎬 StreamList</h1>
-        <p>Your personal streaming watchlist</p>
-
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="Add a movie or show..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-          <button type="submit">Add</button>
-        </form>
-
-        <ul>
-          {streamList.map((item, index) => (
-            <li key={index} className={item.watched ? 'watched' : ''}>
-              <input
-                type="checkbox"
-                checked={item.watched}
-                onChange={() => toggleWatched(index)}
-              />
-              <span>{item.title}</span>
-              <button className="delete-btn" onClick={() => handleDelete(index)}>
-                🗑️
-              </button>
-            </li>
-          ))}
-        </ul>
-      </header>
+    <div className="streamlist-container">
+      <h1>🎬 StreamList</h1>
+      <p>Your personal streaming watchlist</p>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Add a movie or show..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+        />
+        <button type="submit">Add</button>
+      </form>
+      <ul className="streamlist">
+        {streamList.map((item, index) => (
+          <li key={index} className={item.watched ? 'watched' : ''}>
+            <input
+              type="checkbox"
+              checked={item.watched}
+              onChange={() => toggleWatched(index)}
+            />
+            <span>{item.title}</span>
+            <button onClick={() => handleDelete(index)}>🗑️</button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
