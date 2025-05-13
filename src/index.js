@@ -1,12 +1,17 @@
 // src/index.js
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import ReactDOM from 'react-dom';
 import App from './App';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import * as serviceWorkerRegistration from './serviceWorker';
 import './index.css';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
+ReactDOM.render(
+  <GoogleOAuthProvider clientId="584767806898-m9lp0ndjmf40no6ftp3c3b4a1c037j45.apps.googleusercontent.com">
     <App />
-  </React.StrictMode>
+  </GoogleOAuthProvider>,
+  document.getElementById('root')
 );
+
+// Register the service worker properly
+serviceWorkerRegistration.register();

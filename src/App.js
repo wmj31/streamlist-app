@@ -1,125 +1,118 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
-import React, { useState, useEffect  } from 'react';
-import Navbar from './components/Navbar';
-import Movies from './components/Movies';
-import Cart from './components/Cart';
-import About from './components/About';
+// src/App.js
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Navbar from './Navbar';
+import Movies from './Movies';
+import Cart from './Cart';
+import StreamList from './StreamList';
+import About from './About';
+import Login from './Login';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
+// App Component
 function App() {
-  
-  const [input, setInput] = useState('');
-  const [editIndex, setEditIndex] = useState(null); // Keeps track of which item is being edited
-  const [editValue, setEditValue] = useState('');   // Stores the edited text
-  const [streamList, setStreamList] = useState(() => {
-    const storedList = localStorage.getItem('streamList');
-    return storedList ? JSON.parse(storedList) : [];
-  });
+  // Global States
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [cart, setCart] = useState([]);
+  const [streamList, setStreamList] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
 
-  // 🧠 Save list to localStorage whenever it changes
-
+  // Load stored data on mount
   useEffect(() => {
-    localStorage.setItem('streamList', JSON.stringify(streamList));
-  }, [streamList]);
+    const storedUser = JSON.parse(localStorage.getItem('loggedInUser'));
+    if (storedUser) {
+      setCurrentUser(storedUser);
+      setIsAuthenticated(true);
+      loadUserData(storedUser.username);
+    }
+  }, []);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (input.trim() === '') return;
-    setStreamList([...streamList, { title: input.trim(), watched: false }]);
-    setInput('');
+  // Save user data to localStorage
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(`cart_${currentUser.username}`, JSON.stringify(cart));
+      localStorage.setItem(`streamList_${currentUser.username}`, JSON.stringify(streamList));
+    }
+  }, [cart, streamList, currentUser]);
+
+ // Load Cart and StreamList per user
+ const loadUserData = (username) => {
+  const userCart = JSON.parse(localStorage.getItem(`cart_${username}`)) || [];
+  const userStreamList = JSON.parse(localStorage.getItem(`streamList_${username}`)) || [];
+  setCart(userCart);
+  setStreamList(userStreamList);
+};
+
+  // Handle Login
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+    loadUserData(user.username);
   };
 
-  const handleDelete = (index) => {
-    setStreamList(streamList.filter((_, i) => i !== index));
+  // Handle Logout
+  const handleLogout = () => {
+    localStorage.removeItem('loggedInUser');
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setCart([]);
+    setStreamList([]);
   };
-  const handleEdit = (index, currentTitle) => {
-    setEditIndex(index);
-    setEditValue(currentTitle);
+
+  // Add movie to Cart
+  const addToCart = (movie) => {
+    if (!cart.find(item => item.id === movie.id)) {
+      setCart([...cart, movie]);
+      toast.success('Added to Cart!');
+    } else {
+      toast.info('Already in Cart!');
+    }
   };
-  
-  const handleSave = (index) => {
-    const updatedList = [...streamList];
-    updatedList[index].title = editValue;
-    setStreamList(updatedList);
-    setEditIndex(null);
+
+  // Move movie to StreamList
+  const moveToStreamList = (movie) => {
+    setCart(cart.filter(item => item.id !== movie.id));
+    setStreamList([...streamList, { ...movie, watched: false }]);
+    toast.success('Moved to StreamList!');
   };
-  const toggleWatched = (index) => {
-    setStreamList(
-      streamList.map((item, i) =>
-        i === index ? { ...item, watched: !item.watched } : item
-      )
+
+  // Toggle Watched Status
+  const toggleWatched = (id) => {
+    const updatedList = streamList.map(movie =>
+      movie.id === id ? { ...movie, watched: !movie.watched } : movie
     );
-    // Start editing an item
-const handleEdit = (index, currentTitle) => {
-  setEditIndex(index);
-  setEditValue(currentTitle);
-};
+    setStreamList(updatedList);
+  };
 
-// Save the updated item
-const handleSave = (index) => {
-  const updatedList = [...streamList];
-  updatedList[index].title = editValue;
-  setStreamList(updatedList);
-  setEditIndex(null);
-};
-
-
+  const deleteFromStreamList = (id) => {
+    const updatedList = streamList.filter((movie) => movie.id !== id);
+    setStreamList(updatedList);
+    toast.info('Movie removed from Stream List.');
   };
 
   return (
     <Router>
-      <Navbar />
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <div className="App-header">
-              <h1>🎬 StreamList</h1>
-              <p>Your personal streaming watchlist.</p>
-              <form onSubmit={handleSubmit}>
-                <input
-                  type="text"
-                  placeholder="Add a movie or show..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                />
-                <button type="submit">Add</button>
-              </form>
-              <ul>
-              {streamList.map((item, index) => (
-                      <li key={index} className={item.watched ? 'watched' : ''}>
-                        <input
-                          type="checkbox"
-                          checked={item.watched}
-                          onChange={() => toggleWatched(index)}
-                        />
+      <div className="App">
+        <Navbar isAuthenticated={isAuthenticated} currentUser={currentUser} handleLogout={handleLogout} />
+        <Routes>
+          <Route path="/login" element={<Login handleLogin={handleLogin} />} />
+          <Route path="/about" element={<About />} />
+          {isAuthenticated ? (
+            <>
+              <Route path="/" element={<Movies addToCart={addToCart} />} />
+              <Route path="/cart" element={<Cart cart={cart} moveToStreamList={moveToStreamList} />} />
+              <Route path="/streamlist" element={<StreamList streamList={streamList} toggleWatched={toggleWatched} deleteFromStreamList={deleteFromStreamList} />}/>
 
-                        {editIndex === index ? (
-                          <>
-                            <input
-                              type="text"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                            />
-                            <button onClick={() => handleSave(index)}>💾 Save</button>
-                          </>
-                        ) : (
-                          <>
-                            <span>{item.title}</span>
-                            <button onClick={() => handleEdit(index, item.title)}>✏️ Edit</button>
-                            <button onClick={() => handleDelete(index)}>🗑️ Delete</button>
-                          </>
-                        )}
-                      </li>
-              ))}
-              </ul>
-            </div>
-          }
-        />
-        <Route path="/movies" element={<Movies />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/about" element={<About />} />
-      </Routes>
+
+            </>
+          ) : (
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          )}
+        </Routes>
+        <ToastContainer position="bottom-right" autoClose={2000} />
+      </div>
     </Router>
   );
 }
